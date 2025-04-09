@@ -23,6 +23,27 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// OllamaTag represents a single model tag in the /api/tags response
+type OllamaTag struct {
+	Name       string    `json:"name"`
+	Model      string    `json:"model"` // Often the same as name for unique models
+	ModifiedAt time.Time `json:"modified_at"`
+	Size       int64     `json:"size"`   // Proxy doesn't know the real size, use 0
+	Digest     string    `json:"digest"` // Proxy doesn't have a digest, leave empty or use a placeholder
+	Details    struct {
+		Format            string   `json:"format"`
+		Family            string   `json:"family"`
+		Families          []string `json:"families"`
+		ParameterSize     string   `json:"parameter_size"`
+		QuantizationLevel string   `json:"quantization_level"`
+	} `json:"details"`
+}
+
+// OllamaTagsResponse represents the response for the /api/tags endpoint
+type OllamaTagsResponse struct {
+	Models []OllamaTag `json:"models"`
+}
+
 type Config struct {
 	Models []ProviderConfig `yaml:"models"`
 }
@@ -63,7 +84,7 @@ var (
 )
 
 func main() {
-	flag.StringVar(&configPath, "config", "./config.yaml", "path to config file")
+	flag.StringVar(&configPath, "config", "~/.continue/config.yaml", "path to config file")
 	flag.BoolVar(&debugFlag, "debug", false, "enable debug logging")
 	flag.Parse()
 
@@ -88,6 +109,7 @@ func main() {
 	r.Any("/v1/chat/*path", proxyHandler)
 	r.GET("/v1/models", listModels)
 	r.POST("/api/show", showHandler)
+	r.GET("/api/tags", tagsHandler) // Add the new route
 
 	// 添加根路径处理程序以进行健康检查或基本信息显示
 	r.GET("/", func(c *gin.Context) {
@@ -467,4 +489,41 @@ func proxyHandler(c *gin.Context) {
 
 	// 执行代理
 	proxy.ServeHTTP(c.Writer, c.Request)
+}
+
+// tagsHandler handles requests for GET /api/tags
+func tagsHandler(c *gin.Context) {
+	configLock.RLock()
+	defer configLock.RUnlock()
+
+	response := OllamaTagsResponse{
+		Models: make([]OllamaTag, 0, len(config.Models)),
+	}
+
+	now := time.Now()
+	for _, provider := range config.Models {
+		tag := OllamaTag{
+			Name:       provider.Name,
+			Model:      provider.Name, // Use the proxy name as the model identifier
+			ModifiedAt: now,           // Use current time as modification time
+			Size:       0,             // Size is unknown for proxied models
+			Digest:     "",            // Digest is unknown
+			Details: struct {
+				Format            string   `json:"format"`
+				Family            string   `json:"family"`
+				Families          []string `json:"families"`
+				ParameterSize     string   `json:"parameter_size"`
+				QuantizationLevel string   `json:"quantization_level"`
+			}{
+				Format:            "proxy",
+				Family:            "proxy", // Or try to infer from provider.Model if needed
+				Families:          nil,
+				ParameterSize:     "N/A",
+				QuantizationLevel: "N/A",
+			},
+		}
+		response.Models = append(response.Models, tag)
+	}
+
+	c.JSON(http.StatusOK, response)
 }

@@ -109,7 +109,7 @@ func main() {
 	r.Any("/v1/chat/*path", proxyHandler)
 	r.GET("/v1/models", listModels)
 	r.POST("/api/show", showHandler)
-	r.GET("/api/tags", tagsHandler) // Add the new route
+	r.GET("/api/tags", tagsHandler)
 
 	// 添加根路径处理程序以进行健康检查或基本信息显示
 	r.GET("/", func(c *gin.Context) {
@@ -117,7 +117,7 @@ func main() {
 	})
 
 	go func() {
-		log.Printf("Starting server on 127.0.0.1:11434")
+		log.Printf("Starting server on http://127.0.0.1:11434")
 		if err := r.Run("127.0.0.1:11434"); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 		}
@@ -371,16 +371,13 @@ func proxyHandler(c *gin.Context) {
 		originalDirector(req) // 应用默认的 Director 逻辑 (设置 Host, Scheme 等)
 
 		// 重写 URL 路径
-		// 保留原始请求的 /chat 路径段
-		// 例如，原始请求 /v1/chat/completions，APIBase https://api.inference.net
+		// 例如：
+		// APIBase https://api.inference.net/v1
 		// 目标 URL 应该是 https://api.inference.net/v1/chat/completions
-		basePath := targetURL.Path
-		requestPath := strings.TrimPrefix(c.Request.URL.Path, "/v1/chat")
-
-		req.URL.Path = strings.TrimSuffix(basePath, "/") + "/chat" + requestPath
-		if strings.HasSuffix(c.Request.URL.Path, "/") && !strings.HasSuffix(req.URL.Path, "/") {
-			req.URL.Path += "/" // 保持末尾的斜杠
-		}
+		// APIBase https://api.novita.ai/v3/openai
+		// 目标 URL 应该是 https://api.novita.ai/v3/openai/chat/completions
+		basePath := strings.TrimSuffix(targetURL.Path, "/")
+		req.URL.Path = basePath + "/chat/completions"
 
 		// 设置认证和其他必要的头信息
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", target.APIKey))

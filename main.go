@@ -62,6 +62,7 @@ var providerAPIBaseMap = map[string]string{
 	"novita":      "https://api.novita.ai/v3/openai",
 	"siliconflow": "https://api.siliconflow.cn/v1",
 	"groq":        "https://api.siliconflow.cn/v1",
+	"xAI":         "https://api.x.ai/v1",
 }
 
 type ProviderConfig struct {

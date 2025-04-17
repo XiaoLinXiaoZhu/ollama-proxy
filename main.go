@@ -63,6 +63,7 @@ var providerAPIBaseMap = map[string]string{
 	"siliconflow": "https://api.siliconflow.cn/v1",
 	"groq":        "https://api.siliconflow.cn/v1",
 	"xAI":         "https://api.x.ai/v1",
+	"gemini":      "https://generativelanguage.googleapis.com/v1beta/openai",
 }
 
 type ProviderConfig struct {

@@ -356,6 +356,23 @@ func proxyHandler(c *gin.Context) {
 
 	proxy := httputil.NewSingleHostReverseProxy(targetURL)
 
+	// Configure transport to use environment proxy settings
+	// This will automatically use HTTP_PROXY, HTTPS_PROXY, and NO_PROXY
+	proxy.Transport = &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		// Copy other potentially important defaults from http.DefaultTransport
+		// to maintain similar connection behavior (timeouts, keep-alives, etc.)
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	// 记录原始请求 (如果 debug 开启)
 	if debugFlag {
 		// 确保 requestBodyBytes 在这里仍然可用

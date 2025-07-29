@@ -1,84 +1,142 @@
-# ollama-proxy
-[English Version](README_EN.md) | [中文版](README.md)
+# Ollama Proxy (TypeScript/Bun 版本)
 
-本地运行的Ollama兼容代理服务，支持多模型供应商无缝集成
+将 Ollama API 请求代理到其他 AI 服务提供商的轻量级代理服务器，现使用 TypeScript 和 Bun 运行时实现。
 
-## 功能介绍
+## 特性
 
-- 🦙 Ollama 部分接口兼容：实现核心API用于VSCode Copilot集成
-- 🛡️ 本地代理服务：在127.0.0.1:11434提供类Ollama API接口
-- 🔌 多供应商支持：Novita/SiliconFlow/Groq/xAI等主流平台接入
-- 🔄 动态配置：复用Continue.dev配置规范，支持YAML热重载
-- 🧩 协议适配：完整实现Ollama核心API接口规范
-- 🔍 调试模式：详细请求/响应日志追踪
+- 兼容 Ollama API 接口
+- 支持所有 OpenAI 兼容的 API 提供商
+- 支持预定义的提供商（Novita、SiliconFlow、Groq 等）
+- 配置热重载
+- 详细的调试日志
+- 完整的 TypeScript 类型支持
 
-## 使用场景
+## 安装与运行
 
-- ✅ VSCode Copilot自定义模型接入（已验证兼容性）
+### 前提条件
+- [Bun](https://bun.sh) 运行时 (v1.0+)
 
-## 已实现接口
+### 安装依赖
+```bash
+bun install
+```
 
-| 端点                 | 方法 | 功能描述                     | 兼容性 |
-|----------------------|------|----------------------------|--------|
-| `/v1/models`         | GET  | 获取可用模型列表             | ✅ 100% |
-| `/api/tags`          | GET  | 获取模型标签信息             | ✅ 100% |
-| `/api/show`          | POST | 查看模型详细信息             | ✅ 100% |
-| `/v1/chat/completions` | POST | 聊天补全接口（代理转发）     | ✅ 100% |
+### 启动服务器
+```bash
+bun run src/server.ts
+```
 
-## 配置详解
+### 调试模式
+```bash
+DEBUG=true bun run src/server.ts
+```
 
-本代理复用 [Continue.dev](https://docs.continue.dev/reference/) 的配置规范，可直接使用现有Continue配置：
+## 配置
+
+创建配置文件 `config.yaml`（如果不存在会自动创建）：
 
 ```yaml
 models:
-  - name: Novita deepseek v3
-    provider: novita
-    model: deepseek/deepseek-v3-0324
-    apiKey: sk_xxxxx
-  - name: Inference.net DeepSeek V3
-    provider: openai
-    apiBase: https://api.inference.net/v1
-    model: deepseek/deepseek-v3-0324/fp-8
-    apiKey: inference-xxxxx
-  - name: Siliconflow DeepSeek-V3
-    provider: siliconflow
-    model: deepseek-ai/DeepSeek-V3
-    apiKey: sk-xxxxxx
+  # 方式1：使用 baseUrl（推荐，支持所有 OpenAI 兼容的 API）
+  - name: "gpt-4o-mini"
+    baseUrl: "https://api.openai.com/v1"
+    model: "gpt-4o-mini"
+    apiKey: "your_openai_api_key_here"
+    systemMessage: "You are a helpful assistant."
+
+  # 方式2：使用预定义的提供商名称
+  - name: "qwen-max"
+    provider: "siliconflow"
+    model: "Qwen/Qwen1.5-72B-Chat"
+    apiKey: "your_siliconflow_api_key_here"
+    systemMessage: "You are a helpful AI assistant."
 ```
 
-## 开发指南
+### 配置说明
 
-构建命令：
+| 字段 | 说明 | 必需 |
+|------|------|------|
+| name | 在 Ollama 中使用的模型名称 | 是 |
+| baseUrl | OpenAI 兼容的 API 基础 URL | 否¹ |
+| provider | 预定义的提供商名称 | 否¹ |
+| model | 服务提供商的实际模型名称 | 是 |
+| apiKey | API 密钥 | 是 |
+| systemMessage | (可选) 系统消息模板 | 否 |
+| modelfile | (可选) 自定义 Modelfile 内容 | 否 |
+| parameters | (可选) 模型参数配置 | 否 |
+| template | (可选) 提示模板 | 否 |
+
+¹ 必须提供 `baseUrl` 或 `provider` 中的一个
+
+### 支持的预定义提供商
+
+| 提供商 | provider 值 | 默认 baseUrl |
+|--------|-------------|-------------|
+| Novita | `novita` | `https://api.novita.ai/v3/openai` |
+| SiliconFlow | `siliconflow` | `https://api.siliconflow.cn/v1` |
+| Groq | `groq` | `https://api.siliconflow.cn/v1` |
+| xAI | `xAI` | `https://api.x.ai/v1` |
+| Gemini | `gemini` | `https://generativelanguage.googleapis.com/v1beta/openai` |
+
+## 测试
+
+运行测试脚本验证代理服务器是否正常工作：
+
 ```bash
-go build -o ollama-proxy
+# 确保服务器正在运行
+bun run test-proxy.js
 ```
 
-启动服务：
+测试脚本会自动测试以下端点：
+- 健康检查 (`/`)
+- 模型列表 (`/v1/models`)
+- Ollama 标签 (`/api/tags`)
+- 聊天完成 (`/v1/chat/completions`)
+- 模型详情 (`/api/show`)
+
+## 支持的 API 端点
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `GET /` | - | 健康检查 |
+| `GET /v1/models` | - | 列出所有配置的模型 |
+| `GET /api/tags` | - | Ollama 兼容的模型标签列表 |
+| `POST /api/show` | - | Ollama 兼容的模型详情 |
+| `POST /v1/chat/completions` | - | 代理到目标提供商的聊天接口 |
+
+## 环境变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `CONFIG_PATH` | `config.yaml` | 配置文件路径 |
+| `DEBUG` | `false` | 启用调试日志 |
+
+## 开发
+
 ```bash
-./ollama-proxy -config /path/to/config.yaml
+# 启动开发服务器
+bun run src/server.ts
+
+# 查看类型检查
+bun tsc --noEmit
+
+# 运行测试
+bun run test-proxy.js
 ```
 
-## 常见问题
+## 项目结构
 
-### 如何启用调试模式？
-启动时添加 `-debug` 参数：
-```bash
-./ollama-proxy -debug
+```
+ollama-proxy/
+├── src/
+│   └── server.ts          # 主服务器文件
+├── config.yaml            # 配置文件（运行时创建）
+├── config.yaml.example    # 配置示例
+├── test-proxy.js          # 测试脚本
+├── package.json           # 项目配置
+├── tsconfig.json          # TypeScript 配置
+└── README.md              # 说明文档
 ```
 
-### 配置修改后如何生效？
-服务会自动监控配置文件变更，保存后立即生效
-
-### 如何验证代理是否正常工作？
-```bash
-curl http://127.0.0.1:11434/v1/models
-```
-
-### 多供应商请求如何路由？
-根据请求中的 `model` 字段自动匹配配置中的 `name` 项
-
-## 贡献指南
-
-欢迎社区贡献！
-
-
+## 许可证
+[MIT](LICENSE)

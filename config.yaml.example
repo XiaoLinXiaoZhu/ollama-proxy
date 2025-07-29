@@ -1,0 +1,37 @@
+# Ollama Proxy 配置示例
+# 支持两种配置方式：
+# 1. 使用 baseUrl 直接指定 OpenAI 兼容的 API 地址
+# 2. 使用 provider 名称（支持预定义的提供商）
+
+models:
+  # 方式1：使用 baseUrl（推荐，支持所有 OpenAI 兼容的 API）
+  - name: "gpt-4o-mini"
+    baseUrl: "https://api.openai.com/v1"
+    model: "gpt-4o-mini"
+    apiKey: "your_openai_api_key_here"
+    systemMessage: "You are a helpful assistant."
+
+  # 方式2：使用预定义的提供商名称
+  - name: "qwen-max"
+    provider: "siliconflow"
+    model: "Qwen/Qwen1.5-72B-Chat"
+    apiKey: "your_siliconflow_api_key_here"
+    systemMessage: "You are a helpful AI assistant."
+
+  # 更多示例
+  - name: "claude-3-haiku"
+    baseUrl: "https://api.anthropic.com/v1"
+    model: "claude-3-haiku-20240307"
+    apiKey: "your_anthropic_api_key_here"
+
+  - name: "gemini-pro"
+    provider: "gemini"
+    model: "gemini-1.5-pro"
+    apiKey: "your_google_api_key_here"
+
+  # 本地模型示例
+  - name: "local-llama"
+    baseUrl: "http://localhost:8000/v1"
+    model: "llama-2-7b-chat"
+    apiKey: "not-needed"
+    systemMessage: "You are a helpful local AI assistant."

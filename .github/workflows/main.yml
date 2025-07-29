@@ -11,18 +11,20 @@ jobs:
   publish-tauri:
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
-
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-22.04 # 使用 Linux 平台进行交叉编译，提高构建速度
     steps:
       - uses: actions/checkout@v4
+      
+      # ==============================
+      # 📦 更新版本号 - 从package.json获取版本
+      # ==============================
+      - name: Get version from package.json
+        id: get-version
+        run: |
+          VERSION=$(grep -o '"version": *"[^"]*"' package.json | awk -F'"' '{print $4}')
+          echo "Found version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          
       - uses: oven-sh/setup-bun@v2
 
       # ==============================

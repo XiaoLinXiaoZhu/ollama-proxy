@@ -8,10 +8,19 @@ on:
 # This workflow will trigger on each push to the `release` branch to create or update a GitHub release, build your app, and upload the artifacts to the release.
 
 jobs:
-  publish-tauri:
+  publish-bun-app:
     permissions:
       contents: write
-    runs-on: ubuntu-22.04 # 使用 Linux 平台进行交叉编译，提高构建速度
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'ubuntu-22.04'
+            build_command: 'bun run build-all-linux && bun run build-all-darwin'
+          - platform: 'windows-latest'
+            build_command: 'bun run build-all'
+
+    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
       
@@ -42,9 +51,29 @@ jobs:
       # ==============================
       # 🏗️ 构建 二进制文件
       # ==============================
-      - name: Build for all platforms
-        run: bun run build-all
+      - name: Build binaries
+        run: ${{ matrix.build_command }}
 
+      # ==============================
+      # 📦 上传构建产物作为 artifacts
+      # ==============================
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries-${{ matrix.platform }}
+          path: dist/*
+
+      # ==============================
+      # 📦 下载所有构建产物
+      # ==============================
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: dist/
+
+      # ==============================
+      # 📦 创建 Release
+      # ==============================
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:

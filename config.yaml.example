@@ -3,6 +3,12 @@
 # 1. 使用 baseUrl 直接指定 OpenAI 兼容的 API 地址
 # 2. 使用 provider 名称（支持预定义的提供商）
 
+# 服务器配置
+server:
+  port: 11434                    # 起始端口号
+  hostname: "127.0.0.1"          # 监听地址
+  maxPortAttempts: 20            # 端口冲突时最大尝试次数
+
 models:
   # 方式1：使用 baseUrl（推荐，支持所有 OpenAI 兼容的 API）
   - name: "gpt-4o-mini"

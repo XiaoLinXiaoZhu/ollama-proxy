@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "bun run src/server.ts",
-    "test": "bun run test-proxy.js"
+    "test": "bun run test-proxy.js",
+    "build": "bun build ./src/server.ts --compile --minify --sourcemap --bytecode --outfile dist/ollama-proxy "
   },
   "dependencies": {
     "yaml": "^2.4.5"

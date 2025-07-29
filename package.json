@@ -5,7 +5,8 @@
   "scripts": {
     "start": "bun run src/server.ts",
     "test": "bun run test-proxy.js",
-    "build": "bun build ./src/server.ts --compile --minify --sourcemap --bytecode --outfile dist/ollama-proxy "
+    "build": "bun build ./src/server.ts --compile --minify --sourcemap --bytecode --outfile dist/ollama-proxy ",
+    "build-all": "mkdir -p dist && bun build --compile --target=bun-linux-x64 ./src/server.ts --outfile dist/ollama-proxy-linux-x64 && bun build --compile --target=bun-linux-x64-baseline ./src/server.ts --outfile dist/ollama-proxy-linux-x64-baseline && bun build --compile --target=bun-linux-x64-modern ./src/server.ts --outfile dist/ollama-proxy-linux-x64-modern && bun build --compile --target=bun-linux-arm64 ./src/server.ts --outfile dist/ollama-proxy-linux-arm64 && bun build --compile --target=bun-windows-x64 ./src/server.ts --outfile dist/ollama-proxy-windows-x64.exe && bun build --compile --target=bun-windows-x64-baseline ./src/server.ts --outfile dist/ollama-proxy-windows-x64-baseline.exe && bun build --compile --target=bun-windows-x64-modern ./src/server.ts --outfile dist/ollama-proxy-windows-x64-modern.exe && bun build --compile --target=bun-darwin-arm64 ./src/server.ts --outfile dist/ollama-proxy-darwin-arm64 && bun build --compile --target=bun-darwin-x64 ./src/server.ts --outfile dist/ollama-proxy-darwin-x64"
   },
   "dependencies": {
     "yaml": "^2.4.5"

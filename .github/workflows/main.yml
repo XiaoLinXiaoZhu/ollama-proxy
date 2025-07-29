@@ -25,65 +25,67 @@ jobs:
       - uses: actions/checkout@v4
 
       # ==============================
-      # 📦 更新版本号 - 从package.json更新到Cargo.toml和tauri.config.json
+      # 📦 下载 BUN 依赖
       # ==============================
-      - name: Update versions in package.json and Cargo.toml
-        id: update-version
-        shell: bash
-        run: |
-          VERSION=$(grep -o '"version": *"[^"]*"' package.json | awk -F'"' '{print $4}')
-          echo "Found version: $VERSION"
-          
-          # 更新Cargo.toml
-          if [ -f "./src-tauri/Cargo.toml" ]; then
-            sed -i "s/^version = \".*\"/version = \"$VERSION\"/" ./src-tauri/Cargo.toml
-            echo "Updated version in ./src-tauri/Cargo.toml"
-          fi
-
-          # 更新tauri.conf.json5
-          if [ -f "./src-tauri/tauri.conf.json5" ]; then
-            sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" ./src-tauri/tauri.conf.json5
-            echo "Updated version in ./src-tauri/tauri.conf.json5"
-          fi
-          
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      # ==============================
-      # 🔍 检查版本号 - 检查 版本号是否同步
-      # ==============================
-      - name: Verify versions
-        run: |
-          echo "Package.json version: $(grep -o '"version": *"[^"]*"' package.json | awk -F'"' '{print $4}')"
-          echo "Cargo.toml version: $(grep -o '^version = "[^"]*"' src-tauri/Cargo.toml | awk -F'"' '{print $2}')"
-          echo "Tauri config version: $(grep -o '"version": "[^"]*"' src-tauri/tauri.conf.json5 | awk -F'"' '{print $4}')"
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-        
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-        # webkitgtk 4.0 is for Tauri v1 - webkitgtk 4.1 is for Tauri v2.
-        # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
-
       - name: install frontend dependencies
         run: bun install
 
-      - uses: tauri-apps/tauri-action@v0
+      # ==============================
+      # 🏗️ Check BUN 状态
+      # ==============================
+      - name: Check BUN version
+        run: bun --version
+
+      # ==============================
+      # 🏗️ 构建 二进制文件
+      # ==============================
+      - name: Build for all platforms
+        run: bun run build-all
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: 'App v${{ env.VERSION }}'
+          body: |
+            ## Ollama Proxy v${{ env.VERSION }}
+            
+            See the assets to download this version and install.
+            
+            ## 适用平台
+            
+            ### Linux
+            - `ollama-proxy-linux-x64`: Linux x64 (现代CPU，2013年后)
+            - `ollama-proxy-linux-x64-baseline`: Linux x64 (基线CPU，2013年前)
+            - `ollama-proxy-linux-x64-modern`: Linux x64 (现代CPU，2013年后，性能更好)
+            - `ollama-proxy-linux-arm64`: Linux ARM64
+            
+            ### Windows
+            - `ollama-proxy-windows-x64.exe`: Windows x64 (现代CPU，2013年后)
+            - `ollama-proxy-windows-x64-baseline.exe`: Windows x64 (基线CPU，2013年前)
+            - `ollama-proxy-windows-x64-modern.exe`: Windows x64 (现代CPU，2013年后，性能更好)
+            
+            ### macOS
+            - `ollama-proxy-darwin-x64`: macOS x64
+            - `ollama-proxy-darwin-arm64`: macOS ARM64 (Apple Silicon)
+            
+            ## 系统要求
+            
+            - Linux: glibc
+            - Windows: 无特殊要求
+            - macOS: 无特殊要求
+            
+            ## 使用说明
+            
+            下载对应平台的可执行文件后，直接运行即可。
+            
+            例如，在Linux x64系统上：
+            ```bash
+            chmod +x ollama-proxy-linux-x64
+            ./ollama-proxy-linux-x64
+            ```
+          files: dist/*
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: v${{ env.VERSION }} # Ensure the tag name is prefixed with 'v' for consistency.
-          releaseName: 'App v${{ env.VERSION }}'
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}

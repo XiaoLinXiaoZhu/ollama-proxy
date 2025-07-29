@@ -1,4 +1,4 @@
-declare const Bun: any;
+// declare const Bun: any;
 
 import { readFileSync, watch, existsSync, writeFileSync } from 'fs';
 import { parse, stringify } from 'yaml';
@@ -245,7 +245,7 @@ function healthCheck(req: Request) {
   });
 }
 
-async function proxyHandler(req: Request) {
+async function proxyHandler(req: Request): Promise<Response> {
   // 读取请求体
   let bodyText = '';
   try {

@@ -58,7 +58,7 @@ jobs:
       # 📦 上传构建产物作为 artifacts
       # ==============================
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binaries-${{ matrix.platform }}
           path: dist/*
@@ -67,7 +67,7 @@ jobs:
       # 📦 下载所有构建产物
       # ==============================
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: dist/
 
